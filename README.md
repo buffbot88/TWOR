@@ -1,94 +1,66 @@
-World of Ra Server Spec — v0.13
+# World of Ra Server
 
-Purpose:
+Astraelum multiplayer presence prototype for Unity clients.
 
-Unity clients connect to a .NET 9 server so multiple players can walk around Astraelum together.
+## Run
 
-Core server responsibilities
+```powershell
+dotnet run --project .\WorldOfRa.Server.csproj
+```
 
-player connect/disconnect
-assign player id
-track zone id
-track player position
-track player rotation
-broadcast player movement
-send NPC spawn list
-support future zone transitions
+The WebSocket endpoint is:
 
-Server stack
+```text
+ws://localhost:5000/ws?token=change-me-dev-token
+```
 
-.NET 9
-ASP.NET Core Minimal API
-WebSockets
-JSON messages
-SQLite first, MySQL later
+The exact port can vary if ASP.NET Core launch settings or environment variables override it.
+Set `WorldSocket:DevToken` per environment and pass the same token in the Unity client WebSocket URL.
 
-First milestone
+## Client Messages
 
-2 Unity players connect
-each sees the other walking around Astraelum
-server tracks positions
-server broadcasts movement
+Send `hello` first:
 
-Message types
-
-hello
-welcome
-playerJoined
-playerLeft
-playerMove
-worldSnapshot
-npcSnapshot
-zoneChangeRequest
-
-Player state
-
+```json
 {
-  "id": "player_123",
+  "type": "hello",
   "name": "Player",
   "zoneId": "astraelum",
   "position": { "x": 0, "y": 0, "z": 0 },
   "rotationY": 180
 }
+```
 
-Folder plan
+Send movement updates:
 
-WorldOfRa.Server/
-  Program.cs
-  appsettings.json
+```json
+{
+  "type": "playerMove",
+  "position": { "x": 1.25, "y": 0, "z": -3.5 },
+  "rotationY": 90
+}
+```
 
-  Core/
-    GameClock.cs
-    ServerIds.cs
+Future zone transitions can use:
 
-  Networking/
-    WebSocketConnection.cs
-    WebSocketHub.cs
-    ClientMessage.cs
-    ServerMessage.cs
+```json
+{
+  "type": "zoneChangeRequest",
+  "zoneId": "astraelum",
+  "position": { "x": 0, "y": 0, "z": 0 },
+  "rotationY": 180
+}
+```
 
-  World/
-    PlayerState.cs
-    NpcState.cs
-    ZoneState.cs
-    WorldState.cs
+## Server Messages
 
-  Services/
-    PlayerSessionService.cs
-    WorldBroadcastService.cs
-    NpcSpawnService.cs
+The server sends:
 
-Not yet
+- `welcome` with the assigned `player`
+- `worldSnapshot` with players in the current zone
+- `npcSnapshot` with static NPC spawns for the current zone
+- `playerJoined` when another player enters the zone
+- `playerLeft` when another player leaves or disconnects
+- `playerMove` when another player moves in the same zone
 
-combat
-inventory
-quests
-guilds
-accounts
-database persistence
-anti-cheat
-MMO scaling
-
-First server is just:
-
-Astraelum multiplayer presence prototype
+All messages are JSON with camel-case fields.
